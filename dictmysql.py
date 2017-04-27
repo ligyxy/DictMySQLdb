@@ -9,7 +9,6 @@ import re
 err = pymysql.err
 cursors = pymysql.cursors
 
-
 class DictMySQL:
     def __init__(self, host, user, passwd, db=None, port=3306, charset='utf8', init_command='SET NAMES UTF8',
                  cursorclass=cursors.Cursor, use_unicode=True, autocommit=False):
@@ -303,7 +302,7 @@ class DictMySQL:
         return columns if self.isstr(columns) else self._backtick_columns(columns)
 
     def select(self, table, columns=None, join=None, where=None, group=None, having=None, order=None, limit=None,
-               iterator=False, fetch=True):
+               iterator=False, fetch=True, dictionary=False):
         """
         :type table: string
         :type columns: list
@@ -318,12 +317,14 @@ class DictMySQL:
         :param iterator: Whether to output the result in a generator. It always returns generator if the cursor is
                          SSCursor or SSDictCursor, no matter iterator is True or False.
         :type fetch: bool
+        :type dictionary: bool
         """
         if not columns:
             columns = ['*']
         where_q, _args = self._where_parser(where)
 
         # TODO: support multiple table
+
 
         _sql = ''.join(['SELECT ', self._backtick_columns(columns),
                         ' FROM ', self._tablename_parser(table)['formatted_tablename'],
@@ -339,6 +340,11 @@ class DictMySQL:
 
         execute_result = self.cur.execute(_sql, _args)
 
+        if columns in ["*", ["*"]]:
+            _fields = [i[0] for i in self.cur.description]
+        else:
+            _fields = columns
+
         if not fetch:
             return execute_result
 
@@ -348,7 +354,17 @@ class DictMySQL:
         if iterator:
             return self._yield_result()
 
-        return self.cur.fetchall()
+        if dictionary:
+            _data = list(self.cur.fetchall())
+            _dctlst = []
+            for _d in _data:
+                _dct = {}
+                for i in range(len(_d)):
+                    _dct[_fields[i]]=_d[i]
+                _dctlst.append(_dct)
+            return tuple(_dctlst)
+        else:
+            return self.cur.fetchall()
 
     def get(self, table, column, join=None, where=None, insert=False, ifnone=None):
         """
@@ -579,3 +595,4 @@ class DictMySQL:
     def close(self):
         self.cur.close()
         self.conn.close()
+
