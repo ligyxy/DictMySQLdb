@@ -113,6 +113,7 @@ class DictMySQL:
             else:
                 q.append(' = '.join([self._backtick(k), placeholder]) if columnname else placeholder)
                 a.append(v)
+        print(', '.join(q), tuple(a))
         return ', '.join(q), tuple(a)
 
     def _join_parser(self, join):
