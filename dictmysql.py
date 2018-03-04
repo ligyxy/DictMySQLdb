@@ -114,6 +114,7 @@ class DictMySQL:
             else:
                 q.append(' = '.join([self._backtick(k), placeholder]) if columnname else placeholder)
                 a.append(v)
+        print(', '.join(q), tuple(a))
         return ', '.join(q), tuple(a)
 
     def _join_parser(self, join):
@@ -420,15 +421,16 @@ class DictMySQL:
             update_columns = value.keys()
 
         value_q, _args = self._value_parser(value, columnname=False)
+        value_qs = dict(zip(update_columns, value_q.split(', ')))
 
         _sql = ''.join(['INSERT INTO ', self._backtick(table), ' (', self._backtick_columns(value), ') VALUES ',
                         '(', value_q, ') ',
-                        'ON DUPLICATE KEY UPDATE ', ', '.join(['='.join([k, k]) for k in update_columns]), ';'])
+                        'ON DUPLICATE KEY UPDATE ', ', '.join(['='.join([k, value_qs[k]]) for k in update_columns]), ';'])
 
         if self.debug:
-            return self.cur.mogrify(_sql, _args)
+            return self.cur.mogrify(_sql, _args + _args)
 
-        self.cur.execute(_sql, _args)
+        self.cur.execute(_sql, _args + _args)
         if commit:
             self.conn.commit()
         return self.cur.lastrowid
