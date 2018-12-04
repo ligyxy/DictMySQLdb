@@ -4,11 +4,17 @@
 from __future__ import print_function
 import pymysql
 import re
-
+import itertools
+from itertools import chain
 
 err = pymysql.err
 cursors = pymysql.cursors
 
+def count(column):
+    return '#COUNT(`%s`)'%(column)
+
+def sum(column):
+    return '#SUM(`%s`)'%(column)
 
 class DictMySQL:
     def __init__(self, host, user, passwd, db=None, port=3306, charset='utf8', init_command='SET NAMES UTF8',
@@ -56,14 +62,15 @@ class DictMySQL:
 
         formatted = []
         for c in cols:
-            if c[0] == '#':
-                formatted.append(c[1:])
-            elif c.startswith('(') and c.endswith(')'):
-                # WHERE (column_a, column_b) IN ((1,10), (1,20))
-                formatted.append(c)
-            else:
-                # backtick the former part when it meets the first dot, and then all the rest
-                formatted.append('.'.join(bt(c.split('.')[0]) + bt('.'.join(c.split('.')[1:]))))
+            if isinstance(c, str):
+                if c[0] == '#':
+                    formatted.append(c[1:])
+                elif c.startswith('(') and c.endswith(')'):
+                    # WHERE (column_a, column_b) IN ((1,10), (1,20))
+                    formatted.append(c)
+                else:
+                    # backtick the former part when it meets the first dot, and then all the rest
+                    formatted.append('.'.join(bt(c.split('.')[0]) + bt('.'.join(c.split('.')[1:]))))
 
         return ', '.join(formatted)
 
