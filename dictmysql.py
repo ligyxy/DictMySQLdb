@@ -490,6 +490,38 @@ class DictMySQL:
         if commit:
             self.conn.commit()
         return self.cur.lastrowid
+    
+    def count(self, table, where=None):
+        """
+        Count matched rows.
+        :type table: string
+        :type where: dict
+        """
+
+        where_q, _where_args = self._where_parser(where)
+
+        _sql = ''.join(['SELECT COUNT(*) FROM', self._tablename_parser(table)['formatted_tablename'],
+                        where_q, ';'])
+        _args = _where_args
+
+        if self.debug:
+            return self.cur.mogrify(_sql, _args)
+
+        result = self.cur.execute(_sql, _args)
+        return result
+    
+    def exists(self, table, where=None):
+        """
+        Check matched row existance.
+        :type table: string
+        :type where: dict
+        """
+
+        result = self.count(table, where)
+        if result > 0:
+            return True
+        else:
+            return False
 
     def update(self, table, value, where, join=None, commit=True):
         """

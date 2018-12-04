@@ -35,6 +35,5 @@ class TestSQLConversion(unittest.TestCase):
         self.assertEqual(self.connection.last_query,
                          " WHERE (`id` < 20)")
 
-
 if __name__ == '__main__':
     unittest.main()
